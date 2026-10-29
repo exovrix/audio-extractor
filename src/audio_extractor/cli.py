@@ -87,11 +87,11 @@ def main(argv: list[str] | None = None) -> int:
             start=args.start,
             duration=args.duration,
         )
-    except (FileNotFoundError, ValueError, FFmpegNotFoundError, RuntimeError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
+    except (FileNotFoundError, ValueError, FFmpegNotFoundError, RuntimeError, OSError) as exc:
+        print(f"audio-extractor: {exc}", file=sys.stderr)
         return 1
 
-    print(out)
+    print(str(out))
     return 0
 
 

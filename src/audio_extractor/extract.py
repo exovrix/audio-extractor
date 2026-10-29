@@ -17,22 +17,6 @@ _FORMAT_CODECS: dict[str, list[str]] = {
     "ogg": ["-c:a", "libvorbis", "-q:a", "5"],
 }
 
-_SUPPORTED_INPUT_SUFFIXES = {
-    ".mp4",
-    ".mov",
-    ".webm",
-    ".mkv",
-    ".avi",
-    ".m4a",
-    ".mp3",
-    ".wav",
-    ".flac",
-    ".ogg",
-    ".aac",
-    ".wma",
-}
-
-
 def build_ffmpeg_args(
     input_path: Path,
     output_path: Path,
@@ -103,8 +87,10 @@ def extract(
         RuntimeError: If ffmpeg exits non-zero.
     """
     src = Path(input_path).expanduser().resolve()
-    if not src.is_file():
+    if not src.exists():
         raise FileNotFoundError(f"Input file not found: {src}")
+    if not src.is_file():
+        raise FileNotFoundError(f"Input path is not a file: {src}")
 
     if output_path is None:
         dest = src.with_suffix(f".{format}")
@@ -112,6 +98,12 @@ def extract(
         dest = Path(output_path).expanduser().resolve()
         if dest.suffix == "":
             dest = dest.with_suffix(f".{format}")
+
+    if dest.resolve() == src:
+        raise ValueError(
+            f"Output path must differ from input path ({src}). "
+            "Pass a different -o/--output or format."
+        )
 
     dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -128,8 +120,17 @@ def extract(
     cmd = [ffmpeg, *args]
     try:
         subprocess.run(cmd, check=True, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError(
+            f"Failed to execute ffmpeg at {ffmpeg!r}. Is it installed and on PATH?"
+        ) from exc
     except subprocess.CalledProcessError as exc:
         detail = (exc.stderr or exc.stdout or "").strip() or "unknown ffmpeg error"
-        raise RuntimeError(f"ffmpeg failed ({exc.returncode}): {detail}") from exc
+        raise RuntimeError(
+            f"ffmpeg failed with exit code {exc.returncode}: {detail}"
+        ) from exc
+
+    if not dest.is_file():
+        raise RuntimeError(f"ffmpeg completed but output was not created: {dest}")
 
     return dest
