@@ -73,6 +73,13 @@ poetry install
 poetry run pytest
 ```
 
+## Notes
+
+- Requires `ffmpeg` on `PATH` at runtime (Windows WinGet installs work once the install directory is on PATH).
+- Default output is 16 kHz mono WAV, a common choice for speech / ASR pipelines.
+- Library version: **0.1.0**
+
 ## License
 
 MIT
+
