@@ -64,11 +64,14 @@ def test_extract_invokes_ffmpeg(tmp_path: Path) -> None:
     src.write_bytes(b"fake")
     dest = tmp_path / "out.wav"
 
+    def fake_run(cmd, check=True, capture_output=True, text=True):
+        Path(cmd[-1]).write_bytes(b"RIFF")
+        return MagicMock(returncode=0)
+
     with (
         patch("audio_extractor.extract.find_ffmpeg", return_value="/usr/bin/ffmpeg"),
-        patch("audio_extractor.extract.subprocess.run") as run_mock,
+        patch("audio_extractor.extract.subprocess.run", side_effect=fake_run) as run_mock,
     ):
-        run_mock.return_value = MagicMock(returncode=0)
         result = extract(src, dest, format="wav", sample_rate=16000, channels=1)
 
     assert result == dest.resolve()
